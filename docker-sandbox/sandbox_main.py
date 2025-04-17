@@ -87,7 +87,7 @@ if __name__ == '__main__':
         input_file_path = os.path.join(script_dir, args.input_file)
         
         # Read agent code from specified file
-        with open(input_file_path, 'r') as f:
+        with open(input_file_path, 'r', encoding='utf-8') as f:
             agent_code = f.read()
 
         # Run the code in the sandbox

@@ -15,4 +15,8 @@ if [ -f ".env" ]; then
 fi
 
 cd docker-sandbox
-python sandbox_main.py
+if [ -z "$1" ]; then
+    python sandbox_main.py
+else
+    python sandbox_main.py --input-file "$1"
+fi
