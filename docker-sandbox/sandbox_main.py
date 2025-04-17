@@ -39,7 +39,8 @@ class DockerSandbox:
             cap_drop=["ALL"],
             environment={
                 "OPENAI_TOKEN": os.getenv("OPENAI_TOKEN"),
-                "MODEL_NAME": os.getenv("MODEL_NAME")
+                "MODEL_NAME": os.getenv("MODEL_NAME"),
+                "PROXY": os.getenv("PROXY_IN_DOCKER")
             },
         )
 

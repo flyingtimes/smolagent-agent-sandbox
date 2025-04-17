@@ -2,7 +2,7 @@ FROM library/python
 
 # Install build dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir smolagents[openai] && \
+    pip install --no-cache-dir smolagents[openai] gradio_client && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
