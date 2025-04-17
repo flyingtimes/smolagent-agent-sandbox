@@ -10,7 +10,9 @@
 ├── docker-sandbox/        # Docker沙盒环境
 │   ├── Dockerfile        # Docker镜像构建文件
 │   └── sandbox_main.py   # 沙盒运行主程序
-└── run_in_sandbox.bat    # Windows下运行沙盒的脚本
+├── run_in_sandbox.bat    # Windows下运行沙盒的脚本
+├── run_in_sandbox.sh     # Linux/Mac下运行沙盒的脚本
+└── .env                  # 环境变量配置文件（需要自行创建）
 ```
 
 ## 环境要求
@@ -27,6 +29,14 @@
    ```bash
    pip install smolagents[openai]
    ```
+4. 创建并配置环境变量文件：
+   - 在项目根目录创建`.env`文件
+   - 添加以下配置（根据实际情况修改）：
+     ```env
+     OPENAI_API_KEY=your-api-key
+     OPENAI_API_BASE=https://openrouter.ai/api/v1
+     MODEL_ID=deepseek/deepseek-chat-v3-0324:free
+     ```
 
 ## 使用说明
 
@@ -52,10 +62,17 @@ print(response)
 
 ### 2. 在沙盒中运行
 
-在Windows环境下，直接运行`run_in_sandbox.bat`脚本：
+根据你的操作系统，运行相应的脚本：
 
+Windows环境：
 ```bash
 ./run_in_sandbox.bat
+```
+
+Linux/Mac环境：
+```bash
+chmod +x run_in_sandbox.sh  # 首次运行前赋予执行权限
+./run_in_sandbox.sh
 ```
 
 这将在Docker容器中安全地执行你的智能体代码。
