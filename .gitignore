@@ -47,6 +47,3 @@ Thumbs.db
 *.tmp
 *.swp
 *~
-
-# Project specific
-agent_code.py
