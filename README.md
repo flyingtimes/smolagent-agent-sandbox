@@ -1,6 +1,8 @@
 # SmolagentAI 沙盒环境
 
-这是一个基于Docker的安全沙盒环境，用于安全地运行基于smolagents框架的AI智能体代码。该项目提供了一个隔离的执行环境，确保AI代码在受控条件下运行。
+## 项目简介
+
+这是一个用于运行smolagents智能体的Docker沙箱环境。该项目提供了一个安全的容器化环境，让您可以在隔离的环境中运行和测试智能体代码。
 
 ## 项目结构
 
@@ -21,71 +23,42 @@
 - Python 3.x
 - smolagents库
 
-## 安装步骤
+## 环境配置
 
-1. 克隆本项目到本地
-2. 确保已安装Docker Desktop并运行
-3. 在项目根目录下安装依赖：
-   ```bash
-   pip install smolagents[openai]
-   ```
-4. 创建并配置环境变量文件：
-   - 在项目根目录创建`.env`文件
-   - 添加以下配置（根据实际情况修改）：
-     ```env
-     OPENAI_API_KEY=your-api-key
-     OPENAI_API_BASE=https://openrouter.ai/api/v1
-     MODEL_ID=deepseek/deepseek-chat-v3-0324:free
-     ```
+1. 首先复制`env.example`文件并重命名为`.env`
+2. 在`.env`文件中配置以下环境变量：
+
+```
+OPENAI_TOKEN="Your openrouter.ai token"    # 设置您的OpenRouter API token
+MODEL_NAME="deepseek/deepseek-chat-v3-0324:free"  # 使用的模型名称
+PROXY="http://ip:port"                    # 代理服务器地址（如需要）
+PROXY_IN_DOCKER="http://host.docker.internal:port"  # Docker容器内使用的代理地址
+```
+
+注意：
+- 请确保设置正确的OpenRouter API token
+- 如果需要使用代理，请正确配置PROXY和PROXY_IN_DOCKER地址
+- Windows环境下Docker容器访问宿主机代理，需要使用`host.docker.internal`作为主机名
 
 ## 使用说明
 
-### 1. 编写智能体代码
+### Windows环境
 
-在`agent_code.py`中编写你的智能体代码。示例代码展示了如何使用smolagents创建一个基本的智能体：
+1. 确保Docker Desktop已启动
+2. 双击运行`run_in_sandbox.bat`脚本
 
-```python
-from smolagents import CodeAgent, OpenAIServerModel
+### Linux/Mac环境
 
-# 初始化模型和智能体
-amodel = OpenAIServerModel(
-    model_id="deepseek/deepseek-chat-v3-0324:free",
-    api_base="https://openrouter.ai/api/v1",
-    api_key="your-api-key"
-)
-agent = CodeAgent(model=amodel, tools=[])
-
-# 运行智能体
-response = agent.run("What's the 20th Fibonacci number?")
-print(response)
-```
-
-### 2. 在沙盒中运行
-
-根据你的操作系统，运行相应的脚本：
-
-Windows环境：
+1. 确保Docker服务已启动
+2. 执行以下命令：
 ```bash
-./run_in_sandbox.bat
-```
-
-Linux/Mac环境：
-```bash
-chmod +x run_in_sandbox.sh  # 首次运行前赋予执行权限
+chmod +x run_in_sandbox.sh
 ./run_in_sandbox.sh
 ```
 
-这将在Docker容器中安全地执行你的智能体代码。
-
-## 安全特性
-
-- 基于Docker的隔离环境
-- 最小化的基础镜像
-- 以非root用户运行
-- 受限的系统权限
-
 ## 注意事项
 
-1. 确保在运行代码前已正确配置API密钥
-2. Docker容器会限制智能体的资源使用和系统访问权限
-3. 建议在开发阶段进行充分测试，确保代码在沙盒环境中正常运行
+1. 首次运行时会自动构建Docker镜像，可能需要一些时间
+2. 确保环境变量配置正确，特别是API token和代理设置
+3. 如遇到网络问题，请检查代理配置是否正确
+4. 代码修改后需要重新运行脚本以更新容器中的代码
