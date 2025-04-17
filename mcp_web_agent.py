@@ -32,5 +32,4 @@ server_parameters1 = StdioServerParameters(
 
 with ToolCollection.from_mcp(server_parameters1, trust_remote_code=True) as tool_collection:
     agent = CodeAgent(tools=[*tool_collection.tools], model=amodel, add_base_tools=True)
-    agent.run("今天有什么新闻
-    ")
+    agent.run("今天有什么新闻")
