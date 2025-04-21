@@ -37,6 +37,7 @@ env/
 
 # Docker
 .docker/
+docker-sandbox/tmp/
 *.log
 docker-compose.override.yml
 

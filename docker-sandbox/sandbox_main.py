@@ -42,6 +42,13 @@ class DockerSandbox:
                 "MODEL_NAME": os.getenv("MODEL_NAME"),
                 "PROXY": os.getenv("PROXY_IN_DOCKER")
             },
+            # 将本地./tmp目录挂载到容器的/workdir目录
+            volumes={
+                os.path.abspath('./tmp'): {
+                    'bind': '/workdir',
+                    'mode': 'rw'
+                }
+            }
         )
 
     def run_code(self, code: str) -> Optional[str]:
