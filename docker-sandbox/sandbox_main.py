@@ -1,7 +1,6 @@
 import os
 import docker
 import argparse
-from docker.transport import NpipeHTTPAdapter
 from typing import Optional
 
 class DockerSandbox:
@@ -9,15 +8,16 @@ class DockerSandbox:
         self.client = docker.from_env()
         self.container = None
 
-    def create_container(self):
+    def create_container(self, volumes=None):
         try:
+            dockerfile_path = os.path.join(os.path.dirname(__file__), 'Dockerfile')
             image, build_logs = self.client.images.build(
-                path=".",
+                path=os.path.dirname(__file__),
+                dockerfile=dockerfile_path,
                 tag="py-sandbox",
                 rm=True,
                 forcerm=True,
-                buildargs={},
-                # decode=True
+                buildargs={}
             )
         except docker.errors.BuildError as e:
             print("Build error logs:")
@@ -25,6 +25,15 @@ class DockerSandbox:
                 if 'stream' in log:
                     print(log['stream'].strip())
             raise
+
+        # 如果没有提供自定义卷，使用默认卷配置
+        if volumes is None:
+            volumes = {
+                os.path.abspath('./tmp'): {
+                    'bind': '/workdir',
+                    'mode': 'rw'
+                }
+            }
 
         # Create container with security constraints and proper logging
         self.container = self.client.containers.run(
@@ -42,13 +51,7 @@ class DockerSandbox:
                 "MODEL_NAME": os.getenv("MODEL_NAME"),
                 "PROXY": os.getenv("PROXY_IN_DOCKER")
             },
-            # 将本地./tmp目录挂载到容器的/workdir目录
-            volumes={
-                os.path.abspath('./tmp'): {
-                    'bind': '/workdir',
-                    'mode': 'rw'
-                }
-            }
+            volumes=volumes
         )
 
     def run_code(self, code: str) -> Optional[str]:

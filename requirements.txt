@@ -1,0 +1,4 @@
+smolagents[mcp]
+openai
+mcp-server-fetch
+mcp-server-time

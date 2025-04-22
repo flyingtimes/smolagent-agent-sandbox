@@ -2,7 +2,8 @@ FROM library/python
 
 # Install build dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir smolagents[openai] gradio_client pandas openpyxl && \
+    pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    smolagents[openai,litellm,mcp] gradio_client pandas openpyxl mcp-server-fetch && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

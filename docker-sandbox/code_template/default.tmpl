@@ -1,0 +1,41 @@
+from smolagents import ToolCollection, CodeAgent
+from smolagents import LiteLLMModel
+from mcp import StdioServerParameters
+import os
+
+# 设置HTTP代理
+os.environ['HTTP_PROXY'] = os.environ["PROXY"]
+os.environ['HTTPS_PROXY'] = os.environ["PROXY"]
+
+amodel = LiteLLMModel(
+    model_id=os.environ["MODEL_NAME"],
+    api_base="https://openrouter.ai/api/v1",
+    api_key=os.environ["OPENAI_TOKEN"],
+)
+fetch_parameters = StdioServerParameters(
+    command="python",
+    args=["-m", "mcp_server_fetch"],
+    env={"HTTP_PROXY": os.environ["PROXY"],"HTTPS_PROXY": os.environ["PROXY"],"USE_PROXY": "true"},
+)
+with ToolCollection.from_mcp(fetch_parameters, trust_remote_code=True) as fetch_collection:
+    agent = CodeAgent(
+        tools=[], 
+        model=amodel,
+        additional_authorized_imports=["pandas","openpyxl","subprocess","os","posixpath","io"],
+        add_base_tools=True
+    )
+    prompt = f"""
+    你的运行环境中有这些包：
+    pandas openpyxl subprocess io 
+    请根据需要导入相应的包
+    程序的工作目录是/app/output
+    如果需要写入文件，请使用 subprocess.run(["echo", echo_output, ">", "/app/output/your-output-filename") 方式，
+    {{question}}
+    """
+    print(agent.run(prompt))
+ 
+    print("==============memory==================")
+    for step in agent.memory.steps:
+        print("-----------------")
+        for message in step.to_messages():
+            print(message)
