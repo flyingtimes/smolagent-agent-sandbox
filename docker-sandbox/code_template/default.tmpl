@@ -1,4 +1,4 @@
-from smolagents import ToolCollection, CodeAgent
+from smolagents import ToolCollection, CodeAgent, ToolCallingAgent,  DuckDuckGoSearchTool
 from smolagents import LiteLLMModel
 from mcp import StdioServerParameters
 import os
@@ -18,10 +18,17 @@ fetch_parameters = StdioServerParameters(
     env={"HTTP_PROXY": os.environ["PROXY"],"HTTPS_PROXY": os.environ["PROXY"],"USE_PROXY": "true"},
 )
 with ToolCollection.from_mcp(fetch_parameters, trust_remote_code=True) as fetch_collection:
-    agent = CodeAgent(
-        tools=[], 
+    search_agent = ToolCallingAgent(
+        tools=[DuckDuckGoSearchTool()],
         model=amodel,
-        additional_authorized_imports=["pandas","openpyxl","subprocess","os","posixpath","io"],
+        name="search_agent",
+        description="This is an agent that can do web search.",
+    )
+    agent =CodeAgent(
+        tools=[DuckDuckGoSearchTool()], 
+        model=amodel,
+        managed_agents=[search_agent],
+        additional_authorized_imports=["*"],
         add_base_tools=True
     )
     prompt = f"""
@@ -29,7 +36,7 @@ with ToolCollection.from_mcp(fetch_parameters, trust_remote_code=True) as fetch_
     pandas openpyxl subprocess io 
     请根据需要导入相应的包
     程序的工作目录是/app/output
-    如果需要写入文件，请使用 subprocess.run(["echo", echo_output, ">", "/app/output/your-output-filename") 方式，
+
     {{question}}
     """
     print(agent.run(prompt))
