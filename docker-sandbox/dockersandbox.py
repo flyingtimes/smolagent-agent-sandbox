@@ -120,7 +120,7 @@ class DockerSandbox:
             print(f"创建沙盒时发生错误: {str(e)}")
             raise
     
-    def run_code(self, code: str) -> Optional[str]:
+    def run_code(self, code: str, template_file: str = "default.tmpl") -> str:
         """
         在容器中执行代码
         
@@ -137,7 +137,7 @@ class DockerSandbox:
         
         # 从code_template/default.py 中读取代码模板,使用Jinja2渲染模板
         from jinja2 import Template
-        with open(os.path.join(os.path.dirname(__file__), 'code_template/default.tmpl'), 'r') as f:
+        with open(os.path.join(os.path.dirname(__file__), 'code_template/default.tmpl'), 'r',encoding='utf-8') as f:
             template = Template(f.read())
             code = template.render(question=code)
 
