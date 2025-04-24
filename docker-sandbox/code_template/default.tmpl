@@ -1,11 +1,29 @@
-from smolagents import ToolCollection, CodeAgent, ToolCallingAgent,  DuckDuckGoSearchTool
-from smolagents import LiteLLMModel
+from smolagents import ToolCollection, CodeAgent, ToolCallingAgent,  DuckDuckGoSearchTool,VisitWebpageTool
+from smolagents import LiteLLMModel, tool   
 from mcp import StdioServerParameters
 import os
+from typing import Optional
 
 # 设置HTTP代理
 os.environ['HTTP_PROXY'] = os.environ["PROXY"]
 os.environ['HTTPS_PROXY'] = os.environ["PROXY"]
+@tool
+def write_to_file(content: str, filename: Optional[str] = "/app/output/result.txt") -> str:
+    """
+    write a content to the default or specific file.
+    Args:
+        content: the file content
+        filename: the filename, default is /app/output/result.txt
+    Returns:
+        if wirte successfully, return "file write to disk successfully"
+        else return ERROR string
+    """
+    try:
+        with open(filename,"w") as f:
+            f.write(content)
+        return "file write to disk successfully"
+    except Exception as e:
+        return f"Error while writing to disk .{e}"
 
 amodel = LiteLLMModel(
     model_id=os.environ["MODEL_NAME"],
@@ -19,13 +37,13 @@ fetch_parameters = StdioServerParameters(
 )
 with ToolCollection.from_mcp(fetch_parameters, trust_remote_code=True) as fetch_collection:
     search_agent = ToolCallingAgent(
-        tools=[DuckDuckGoSearchTool()],
+        tools=[DuckDuckGoSearchTool(),VisitWebpageTool()],
         model=amodel,
         name="search_agent",
         description="This is an agent that can do web search.",
     )
     agent =CodeAgent(
-        tools=[DuckDuckGoSearchTool()], 
+        tools=[DuckDuckGoSearchTool(),write_to_file], 
         model=amodel,
         managed_agents=[search_agent],
         additional_authorized_imports=["*"],
@@ -36,7 +54,6 @@ with ToolCollection.from_mcp(fetch_parameters, trust_remote_code=True) as fetch_
     pandas openpyxl subprocess io 
     请根据需要导入相应的包
     程序的工作目录是/app/output
-
     {{question}}
     """
     print(agent.run(prompt))
