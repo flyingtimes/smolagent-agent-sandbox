@@ -61,7 +61,7 @@ sandbox = DockerSandbox()
 # """)
 #print(result)
 result = sandbox.run_code("""
-1、今天2025年4月24日，请搜索8个关于今天中国股票市场的信息，将每个信息的title和link以json格式输出，注意字符串含有中文，字符串以utf-8编码输出
+1、今天2025年4月25日，请搜索8个关于今天美国股票市场的信息，将每个信息的title和link以json格式输出，注意字符串含有中文，字符串以utf-8编码输出
 2、读取json格式结果中每一个link的网页内容，并拼接成一个大的文本。
 3、根据这个大文本内容，写入工作目录result.txt，以utf-8编码输出
 4、读取工作目录中result.txt,分析中国股票市场的情况，用中文回答，将结果以markdown格式写入工作目录下的output4.md

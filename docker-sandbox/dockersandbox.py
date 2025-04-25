@@ -100,7 +100,7 @@ class DockerSandbox:
                 self.container = self.client.containers.run(
                     "py-sandbox",
                     command="tail -f /dev/null",  # 保持容器运行
-                    detach=True,
+                    detach=False,
                     tty=True,
                     mem_limit="512m",  # 内存限制
                     cpu_quota=50000,  # CPU配额
