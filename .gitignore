@@ -13,6 +13,7 @@ eggs/
 lib/
 lib64/
 parts/
+browser_data
 sdist/
 var/
 wheels/

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import sys
+import argparse
 from pathlib import Path
 import urllib.parse
 from patchright.async_api import async_playwright, Page, BrowserContext
@@ -12,6 +13,11 @@ load_dotenv(override=True)
 
 SENSITIVE_DATA = {}
 
+# 添加命令行参数解析
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='下载Z-Library图书')
+    parser.add_argument('-n', '--name', type=str, help='要查找下载的图书名称')
+    return parser.parse_args()
 
 # --- Helper Functions (from playwright_script_helpers.py) ---
 from patchright.async_api import Page
@@ -111,7 +117,7 @@ async def _try_locate_and_act(page: Page, selector: str, action_type: str, text:
 	raise PlaywrightActionError(f"Action '{action_type}' failed unexpectedly for {repr(original_selector)}. ({step_info})")
 
 # --- End Helper Functions ---
-async def run_generated_script():
+async def run_generated_script(book_name=None):
     global SENSITIVE_DATA
     async with async_playwright() as p:
         browser = None
@@ -120,85 +126,104 @@ async def run_generated_script():
         exit_code = 0 # Default success exit code
         try:
             print('Launching chromium browser...')
-            browser = await p.chromium.launch(headless=False, proxy={'server': 'http://127.0.0.1:1087', 'bypass': None, 'username': None, 'password': None})
+            # browser = await p.chromium.launch_persistent_context(
+            #     headless=False, 
+            #     user_data_dir="./browser_data",
+            #     channel="chrome",
+            #     accept_downloads=True,
+            #     proxy={'server': 'http://127.0.0.1:1087', 'bypass': None, 'username': None, 'password': None}
+            #     )
+            browser = await p.chromium.connect_over_cdp("http://localhost:9222")
+                
             # Create context with downloads enabled
-            context = await browser.new_context(
-                no_viewport=True,
-                accept_downloads=True
-            )
+            #context = await browser.new_context(
+            #    no_viewport=True,
+            #    accept_downloads=True
+            #)
             print('Browser context created with downloads enabled.')
             
-            # Set up download handler
-            page = await context.new_page()
             
+            # Set up download handler
+            default_context = browser.contexts[0]
+            page = default_context.pages[0]
+            #page = await browser.new_page()
+            await page.wait_for_timeout(20000)
             # Set up download handler to save files to Downloads folder
             download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
-            page.on("download", lambda download: download.save_as(
-                os.path.join(download_path, download.suggested_filename)
-            ))
             
-            print(f'Download path set to: {download_path}')
+            # 使用异步函数处理下载
+            async def handle_download(download):
+                print(f"正在下载: {download.suggested_filename}")
+                await download.save_as(os.path.join(download_path, download.suggested_filename))
+                print(f"下载完成: {download.suggested_filename}")
+            
+            page.on("download", handle_download)
+            
+            print(f'下载路径设置为: {download_path}')
             # Initial page handling
-            if context.pages:
-                page = context.pages[0]
+            if default_context.pages:
+                page = default_context.pages[0]
                 print('Using initial page provided by context.')
             else:
-                page = await context.new_page()
+                page = await default_context.new_page()
                 print('Created a new page as none existed.')
-            print('\n--- Starting Generated Script Execution ---')
+            print('\n--- 开始执行脚本 ---')
 
             # --- Step 1 ---
             # Action 1
-            print(f"Navigating to: https://101ml.fi (Step 1, Action 1)")
+            print(f"导航到: https://101ml.fi (Step 1, Action 1)")
             await page.goto("https://101ml.fi", timeout=50000)
             await page.wait_for_load_state('load', timeout=50000)
-            #await page.wait_for_timeout(10000)
-            print('page loaded')
+            print('页面已加载')
+            
             # --- Step 2 ---
             # Action 2
-            await _try_locate_and_act(page, "xpath=//html/body/div[2]/div/div/div[1]/form/div[1]/div/div[1]/input", "fill", text=replace_sensitive_data("\u5c04\u96d5\u82f1\u96c4\u4f20", SENSITIVE_DATA), step_info="Step 2, 输入搜索关键词")
+            search_term = book_name if book_name else "\u5c04\u96d5\u82f1\u96c4\u4f20"
+            print(f"搜索图书: {search_term}")
+            await _try_locate_and_act(page, "xpath=//html/body/div[2]/div/div/div[1]/form/div[1]/div/div[1]/input", "fill", text=replace_sensitive_data(search_term, SENSITIVE_DATA), step_info="Step 2, 输入搜索关键词")
             # Action 3
             await _try_locate_and_act(page, "xpath=//html/body/div[2]/div/div/div[1]/form/div[1]/div/div[2]/div/button", "click", step_info="Step 2, 点击搜索")
             await page.wait_for_timeout(5000)
             selector = "xpath=//*[@id=\"searchResultBox\"]//div[contains(@class,\"book-item\")][1]//z-bookcard"
             locator = await page.locator(selector).first.get_attribute('href')
-            print("https://101ml.fi"+locator)
+            print("找到图书链接: https://101ml.fi"+locator)
             await page.goto("https://101ml.fi"+locator, timeout=50000)
             await page.wait_for_load_state('load', timeout=50000)
+            
             # --- Step 3 ---
             # Action 4
             await _try_locate_and_act(page, "xpath=//a[@class=\"btn btn-default addDownloadedBook\"]", "click", step_info="Step 3, 下载")
-            print("Waiting for download to complete...")
-            # Wait longer for download to complete
-            await page.wait_for_timeout(30000)  # 30 seconds should be enough for most downloads
-            print("Download wait time completed")
-            await page.wait_for_timeout(5000)
+            print("等待下载完成...")
+            # 等待下载完成
+            await page.wait_for_timeout(30000)  # 30秒应该足够大多数下载
+            print("下载等待时间结束")
             
         except PlaywrightActionError as pae:
-            print(f'\n--- Playwright Action Error: {pae} ---', file=sys.stderr)
+            print(f'\n--- Playwright 操作错误: {pae} ---', file=sys.stderr)
             exit_code = 1
         except Exception as e:
-            print(f'\n--- An unexpected error occurred: {e} ---', file=sys.stderr)
+            print(f'\n--- 发生意外错误: {e} ---', file=sys.stderr)
             import traceback
             traceback.print_exc()
             exit_code = 1
         finally:
-            print('\n--- Generated Script Execution Finished ---')
-            print('Closing browser/context...')
+            print('\n--- 脚本执行完成 ---')
+            print('正在关闭浏览器/上下文...')
             if context:
                  try: await context.close()
-                 except Exception as ctx_close_err: print(f'  Warning: could not close context: {ctx_close_err}', file=sys.stderr)
+                 except Exception as ctx_close_err: print(f'  警告: 无法关闭上下文: {ctx_close_err}', file=sys.stderr)
             if browser:
                  try: await browser.close()
-                 except Exception as browser_close_err: print(f'  Warning: could not close browser: {browser_close_err}', file=sys.stderr)
-            print('Browser/context closed.')
-            # Exit with the determined exit code
+                 except Exception as browser_close_err: print(f'  警告: 无法关闭浏览器: {browser_close_err}', file=sys.stderr)
+            print('浏览器/上下文已关闭.')
+            # 使用确定的退出代码退出
             if exit_code != 0:
-                print(f'Script finished with errors (exit code {exit_code}).', file=sys.stderr)
+                print(f'脚本执行出错 (退出代码 {exit_code}).', file=sys.stderr)
                 sys.exit(exit_code)
 
 # --- Script Entry Point ---
 if __name__ == '__main__':
+    args = parse_arguments()
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    asyncio.run(run_generated_script())
+    asyncio.run(run_generated_script(args.name))
